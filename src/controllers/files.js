@@ -15,11 +15,11 @@ module.exports = {
   create: async (req, res) => {
     try{
       const { filename } = req.file;
-      const { id } = req.params;
+      const { id: shopId } = req.params; //shop id
 
       const file = await files.create({
-        path: `/temp/${filename}`,
-        shopId: parseInt(id)
+        path: filename,
+        shopId: parseInt(shopId)
       });
 
       return res.status(201).json(file);
@@ -30,11 +30,14 @@ module.exports = {
   remove: async (req, res) => {
     try{
       const { id } = req.params;
+      const { id: userId } = req.user;
 
       const file = await files.findByPk(id);
       const shop = await shops.findByPk(file.shopId);
 
-      const resp = await files.destroy({ where: { [Op.and]: [{id}, {shopId: shop.id}] } });
+      if(shop.userId !== userId) return res.status(401).json({ message: 'usuário não autorizado!' });
+
+      const resp = await files.destroy({ where: { [Op.and]: [{id}] } });
 
       if(resp < 1) return res.status(400).json({ message: 'falha ao excluir' });
 
