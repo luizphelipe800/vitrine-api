@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
 
   shops.associate = models => {
     shops.belongsTo(models.users);
+    shops.hasMany(models.files, { foreignKey: 'shopId' });
   }
 
   return shops;

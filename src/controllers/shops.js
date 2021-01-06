@@ -1,4 +1,4 @@
-const { shops, users } = require('../models');
+const { shops, users, files } = require('../models');
 const { Op } = require('sequelize');
 
 module.exports = {
@@ -22,7 +22,9 @@ module.exports = {
         attributes: ['name', 'email']
       }});
 
-      return res.status(200).json(shop);
+      const images = await files.findAll({ where: { shopId: id }});
+
+      return res.status(200).json({ shop, images });
     }catch(err){
       return res.status(400).json(err);
     }
