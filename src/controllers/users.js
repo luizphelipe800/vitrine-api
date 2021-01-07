@@ -1,4 +1,5 @@
 const { users } = require('../models');
+const mail = require('../services/mail');
 
 module.exports = {
   validate: async (req, res) => {
@@ -35,6 +36,16 @@ module.exports = {
     try{
       const { name, email, password } = req.body;
       const user = await users.create({ name, email, password });
+
+      mail.sendMail({
+        from: 'joe doe <example@email.com>',
+        to: `${user.name} <${user.email}>`,
+        subject: 'Confirmação de Email!',
+        template: 'activateuser',
+        context: {
+          username: user.name
+        }
+      });
 
       return res.status(201).json(user);
     }catch(err){
