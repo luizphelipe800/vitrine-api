@@ -6,14 +6,14 @@ const routes = require('./src/routes');
 
 const app = express();
 
-app.use('/', express.static(path.resolve(__dirname, 'temp')));
+app.use(express.static(path.resolve(__dirname, 'temp')));
+app.use('/docs', express.static(path.resolve(__dirname, 'docs')));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
 app.use(routes);
 
-app.get('/healthcheck', (req, res) => {
-    return res.send('api is on the air!');
-})
+
 
 module.exports = app;
