@@ -8,6 +8,7 @@ const files = require('./controllers/files');
 
 routes.post('/login', users.validate);
 routes.post('/register', users.create);
+routes.get('/activate/:utoken', users.active);
 
 routes.get('/shops', shops.index);
 routes.get('/shops/:id', shops.show);

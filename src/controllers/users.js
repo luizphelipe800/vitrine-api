@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const { users } = require('../models');
 const mail = require('../services/mail');
 
@@ -20,6 +21,7 @@ module.exports = {
       return res.status(400).json(err);
     }
   },
+
   show: async (req, res) => {
     try{
       const { id } = req.params;
@@ -32,10 +34,13 @@ module.exports = {
       return res.status(400).json(err);
     }
   },
+
   create: async (req, res) => {
     try{
       const { name, email, password } = req.body;
       const user = await users.create({ name, email, password });
+
+      const userToken = jwt.sign({ id: user.id }, 'activateToken');
 
       mail.sendMail({
         from: 'joe doe <example@email.com>',
@@ -43,7 +48,8 @@ module.exports = {
         subject: 'Confirmação de Email!',
         template: 'activateuser',
         context: {
-          username: user.name
+          username: user.name,
+          url: `http://localhost:3000/activate/${userToken}`
         }
       });
 
@@ -52,6 +58,7 @@ module.exports = {
       return res.status(400).json(err);
     }
   },
+
   update: async (req, res) => {
     try{
       const { id } = req.params;
@@ -65,6 +72,7 @@ module.exports = {
       return res.status(400).json(err);
     }
   },
+
   remove: async (req, res) => {
     try{
       const { id } = req.params;
@@ -73,6 +81,21 @@ module.exports = {
       if(user < 1) return res.status(400).json({ message: 'falha ao excluir' });
 
       return res.status(200).json({ message: 'item removido' });
+    }catch(err){
+      return res.status(400).json(err);
+    }
+  },
+
+  active: async (req, res) => {
+    try{
+      const { utoken } = req.params;
+      const { id } = jwt.verify(utoken, 'activateToken');
+      const user = await users.findByPk(id);
+
+      user.active = true;
+      await user.save();
+
+      return res.status(200).json({ message: 'usuario ativado' });
     }catch(err){
       return res.status(400).json(err);
     }
