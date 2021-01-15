@@ -22,9 +22,9 @@ module.exports = {
         attributes: ['name', 'email']
       }});
 
-      const images = await files.findAll({ where: { shopId: id }});
+      const shopimages = await files.findAll({ where: { shopId: id }});
 
-      return res.status(200).json({ shop, images });
+      return res.status(200).json({ shop, shopimages });
     }catch(err){
       return res.status(400).json(err);
     }
