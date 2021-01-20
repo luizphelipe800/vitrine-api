@@ -8,9 +8,9 @@ module.exports = {
       const { email, password } = req.body;
       const user = await users.findOne({ where: { email }});
 
-      if(!user) return res.status(401).json({ message: 'email inválido!' });
+      if(!user) return res.status(400).send({ message: 'email inválido!' });
 
-      if(!user.comparePassword(password)) return res.status(401).json({ message: 'senha incorreta' });
+      if(!user.comparePassword(password)) return res.status(400).send({ message: 'senha incorreta' });
 
       const token = user.genJwt();
 
