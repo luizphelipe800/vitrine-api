@@ -4,7 +4,18 @@ const { Op } = require('sequelize');
 module.exports = {
   index: async (req, res) => {
     try{
-      const shopsList = await shops.findAll({ include: {
+      const { uid } = req.query;
+
+      if(!uid){
+        const shopsList = await shops.findAll({ include: {
+          model: users,
+          attributes: ['name', 'email']
+        } });
+
+        return res.status(200).json(shopsList);
+      }
+
+      const shopsList = await shops.findAll({ where: { userId: uid }, include: {
         model: users,
         attributes: ['name', 'email']
       } });

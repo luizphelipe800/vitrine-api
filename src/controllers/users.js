@@ -24,7 +24,7 @@ module.exports = {
 
   show: async (req, res) => {
     try{
-      const { id } = req.params;
+      const { id } = req.user;
       const user = await users.findByPk(id);
 
       user.password = undefined;
@@ -54,8 +54,8 @@ module.exports = {
       });
 
       return res.status(201).json(user);
-    }catch(err){
-      return res.status(400).json(err);
+    }catch{
+      return res.status(400).json({ message: 'um usuario foi cadastrado com esse email!' });
     }
   },
 

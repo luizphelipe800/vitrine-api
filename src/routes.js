@@ -17,7 +17,7 @@ routes.get('/files/:id', files.show);
 
 routes.use(auth.authenticate('jwt', { session: false }));
 
-routes.get('/users/:id', users.show);
+routes.get('/users', users.show);
 routes.put('/users/:id', users.update);
 routes.delete('/users/:id', users.remove);
 
