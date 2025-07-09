@@ -8,6 +8,9 @@ const files = require("./controllers/files");
 
 routes.get("/healthcheck", (req, res) => res.send("TUDO OK"));
 routes.get("/teste", (req, res) => res.send("ISSO É BRABO"));
+routes.get("/brabo", (req, res) =>
+  res.json({ message: "ISSO AQUI FUNCIONA MESMO BEBE" })
+);
 
 routes.post("/login", users.validate);
 routes.post("/register", users.create);
