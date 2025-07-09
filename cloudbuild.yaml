@@ -82,9 +82,9 @@ substitutions:
 # Build options
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: "E2_STANDARD_4"
-  diskSizeGb: 75
+  machineType: "E2_MEDIUM"
+  diskSizeGb: 50
   substitutionOption: "ALLOW_LOOSE"
 
-# Timeout for the entire build
-timeout: "1800s" # 30 minutes para incluir deploy
+# Timeout for the entire build (increased for slower machine)
+timeout: "2400s" # 40 minutes para compensar menor performance
