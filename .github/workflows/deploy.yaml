@@ -44,7 +44,3 @@ jobs:
             --region ${CLOUD_RUN_REGION} \
             --platform managed \
             --allow-unauthenticated # Remova ou ajuste conforme a necessidade de autenticação
-            --memory 512Mi
-            --cpu 1
-            --min-instances 1
-            --max-instances 1
