@@ -1,5 +1,14 @@
 steps:
-  # Build the container image
+  # Step 1: Create Artifact Registry repository if it doesn't exist
+  - name: "gcr.io/google.com/cloudsdktool/google-cloud-sdk"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        gcloud artifacts repositories describe ${_REPOSITORY} --location=${_REGION} --project=${PROJECT_ID} >/dev/null 2>&1 || 
+        gcloud artifacts repositories create ${_REPOSITORY} --repository-format=docker --location=${_REGION} --project=${PROJECT_ID} --description="Production repository for vitrine-api"
+
+  # Step 2: Build the container image
   - name: "gcr.io/cloud-builders/docker"
     args:
       [
@@ -9,7 +18,7 @@ steps:
         ".",
       ]
 
-  # Push the container image to Artifact Registry
+  # Step 3: Push the container image to Artifact Registry
   - name: "gcr.io/cloud-builders/docker"
     args:
       [
@@ -23,9 +32,9 @@ images:
 
 # Substitutions to make the build configuration reusable
 substitutions:
-  _REGION: 'us-central1'
-  _REPOSITORY: 'vitrine-prod-repo'
-  _IMAGE_NAME: 'vitrine-api-prod'
+  _REGION: "us-central1"
+  _REPOSITORY: "vitrine-prod-repo"
+  _IMAGE_NAME: "vitrine-api-prod"
 
 # Add the logging option to fix the error
 options:
