@@ -5,17 +5,17 @@ steps:
     args:
       - "-c"
       - |
-        echo "Checking if repository ${_REPOSITORY} exists..."
-        if ! gcloud artifacts repositories describe ${_REPOSITORY} --location=${_REGION} --project=${PROJECT_ID} >/dev/null 2>&1; then
-          echo "Repository does not exist. Creating repository ${_REPOSITORY}..."
-          gcloud artifacts repositories create ${_REPOSITORY} \
+        echo "Checking if repository ${_AR_REPO} exists..."
+        if ! gcloud artifacts repositories describe ${_AR_REPO} --location=${_AR_LOCATION} --project=${PROJECT_ID} >/dev/null 2>&1; then
+          echo "Repository does not exist. Creating repository ${_AR_REPO}..."
+          gcloud artifacts repositories create ${_AR_REPO} \
             --repository-format=docker \
-            --location=${_REGION} \
+            --location=${_AR_LOCATION} \
             --project=${PROJECT_ID} \
-            --description="Production repository for vitrine-api"
+            --description="Production repository for ${_IMAGE_NAME}"
           echo "Repository created successfully."
         else
-          echo "Repository ${_REPOSITORY} already exists."
+          echo "Repository ${_AR_REPO} already exists."
         fi
 
   # Step 2: Configure Docker authentication for Artifact Registry
@@ -24,47 +24,67 @@ steps:
     args:
       - "-c"
       - |
-        gcloud auth configure-docker ${_REGION}-docker.pkg.dev --quiet
+        gcloud auth configure-docker ${_AR_LOCATION}-docker.pkg.dev --quiet
 
-  # Step 3: Build the container image
+  # Step 3: Build the container image with multiple tags
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "build"
       - "-t"
-      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA"
+      - "${_AR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$COMMIT_SHA"
       - "-t"
-      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest"
+      - "${_AR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:latest"
       - "."
 
-  # Step 4: Push the container image to Artifact Registry
+  # Step 4: Push the commit-specific tag
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "push"
-      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA"
+      - "${_AR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$COMMIT_SHA"
 
   # Step 5: Push the latest tag
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "push"
-      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest"
+      - "${_AR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:latest"
+
+  # Step 6: Deploy to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:latest"
+    args:
+      - "gcloud"
+      - "run"
+      - "deploy"
+      - "${_SERVICE_NAME}"
+      - "--image=${_AR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:latest"
+      - "--region=${_CLOUD_RUN_REGION}"
+      - "--platform=managed"
+      - "--allow-unauthenticated"
+      - "--port=8080"
+      - "--memory=512Mi"
+      - "--cpu=1"
+      - "--max-instances=10"
+      - "--min-instances=0"
+      - "--timeout=300s"
 
 # Specify the images to be produced
 images:
-  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA"
-  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest"
+  - "${_AR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:$COMMIT_SHA"
+  - "${_AR_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_IMAGE_NAME}:latest"
 
 # Substitutions to make the build configuration reusable
 substitutions:
-  _REGION: "us-central1"
-  _REPOSITORY: "vitrine-prod-repo"
-  _IMAGE_NAME: "vitrine-api-prod"
+  _AR_LOCATION: "southamerica-east1" # Região do seu Artifact Registry
+  _AR_REPO: "my-docker-repo" # Nome do seu repositório no Artifact Registry
+  _IMAGE_NAME: "my-app" # Nome da sua imagem Docker
+  _SERVICE_NAME: "my-cloud-run-service" # Nome do seu serviço Cloud Run
+  _CLOUD_RUN_REGION: "southamerica-east1" # Região do seu serviço Cloud Run
 
 # Build options
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: "E2_HIGHCPU_8"
-  diskSizeGb: 100
+  machineType: "E2_STANDARD_4"
+  diskSizeGb: 75
   substitutionOption: "ALLOW_LOOSE"
 
 # Timeout for the entire build
-timeout: "1200s"
+timeout: "1800s" # 30 minutes para incluir deploy
