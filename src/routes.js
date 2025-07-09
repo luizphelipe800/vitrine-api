@@ -1,31 +1,33 @@
-const routes = require('express').Router();
-const auth = require('./middlewares/passport');
-const upload = require('./middlewares/upload');
+const routes = require("express").Router();
+const auth = require("./middlewares/passport");
+const upload = require("./middlewares/upload");
 
-const users = require('./controllers/users');
-const shops = require('./controllers/shops');
-const files = require('./controllers/files');
+const users = require("./controllers/users");
+const shops = require("./controllers/shops");
+const files = require("./controllers/files");
 
-routes.post('/login', users.validate);
-routes.post('/register', users.create);
-routes.get('/activate/:utoken', users.active);
+routes.get("/healthcheck", (req, res) => res.send("TUDO OK"));
 
-routes.get('/shops', shops.index);
-routes.get('/shops/:id', shops.show);
+routes.post("/login", users.validate);
+routes.post("/register", users.create);
+routes.get("/activate/:utoken", users.active);
 
-routes.get('/files/:id', files.show);
+routes.get("/shops", shops.index);
+routes.get("/shops/:id", shops.show);
 
-routes.use(auth.authenticate('jwt', { session: false }));
+routes.get("/files/:id", files.show);
 
-routes.get('/users', users.show);
-routes.put('/users/:id', users.update);
-routes.delete('/users/:id', users.remove);
+routes.use(auth.authenticate("jwt", { session: false }));
 
-routes.post('/shops', shops.create);
-routes.put('/shops/:id', shops.update);
-routes.delete('/shops/:id', shops.remove);
+routes.get("/users", users.show);
+routes.put("/users/:id", users.update);
+routes.delete("/users/:id", users.remove);
 
-routes.post('/files/:id', upload.single('shopImg'), files.create);
-routes.delete('/files/:id', files.remove);
+routes.post("/shops", shops.create);
+routes.put("/shops/:id", shops.update);
+routes.delete("/shops/:id", shops.remove);
+
+routes.post("/files/:id", upload.single("shopImg"), files.create);
+routes.delete("/files/:id", files.remove);
 
 module.exports = routes;
