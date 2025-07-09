@@ -1,2 +1,32 @@
+steps:
+  # Build the container image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA",
+        ".",
+      ]
+
+  # Push the container image to Artifact Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "push",
+        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA",
+      ]
+
+# Specify the image to be produced
+images:
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA"
+
+# Substitutions to make the build configuration reusable
+substitutions:
+  _REGION: 'us-central1'
+  _REPOSITORY: 'vitrine-prod-repo'
+  _IMAGE_NAME: 'vitrine-api-prod'
+
+# Add the logging option to fix the error
 options:
   logging: CLOUD_LOGGING_ONLY
