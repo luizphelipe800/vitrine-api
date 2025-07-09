@@ -1,34 +1,57 @@
 steps:
   # Step 1: Create Artifact Registry repository if it doesn't exist
-  - name: "gcr.io/google.com/cloudsdktool/google-cloud-sdk"
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:latest"
     entrypoint: "bash"
     args:
       - "-c"
       - |
-        gcloud artifacts repositories describe ${_REPOSITORY} --location=${_REGION} --project=${PROJECT_ID} >/dev/null 2>&1 || 
-        gcloud artifacts repositories create ${_REPOSITORY} --repository-format=docker --location=${_REGION} --project=${PROJECT_ID} --description="Production repository for vitrine-api"
+        echo "Checking if repository ${_REPOSITORY} exists..."
+        if ! gcloud artifacts repositories describe ${_REPOSITORY} --location=${_REGION} --project=${PROJECT_ID} >/dev/null 2>&1; then
+          echo "Repository does not exist. Creating repository ${_REPOSITORY}..."
+          gcloud artifacts repositories create ${_REPOSITORY} \
+            --repository-format=docker \
+            --location=${_REGION} \
+            --project=${PROJECT_ID} \
+            --description="Production repository for vitrine-api"
+          echo "Repository created successfully."
+        else
+          echo "Repository ${_REPOSITORY} already exists."
+        fi
 
-  # Step 2: Build the container image
+  # Step 2: Configure Docker authentication for Artifact Registry
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:latest"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        gcloud auth configure-docker ${_REGION}-docker.pkg.dev --quiet
+
+  # Step 3: Build the container image
   - name: "gcr.io/cloud-builders/docker"
     args:
-      [
-        "build",
-        "-t",
-        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA",
-        ".",
-      ]
+      - "build"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest"
+      - "."
 
-  # Step 3: Push the container image to Artifact Registry
+  # Step 4: Push the container image to Artifact Registry
   - name: "gcr.io/cloud-builders/docker"
     args:
-      [
-        "push",
-        "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA",
-      ]
+      - "push"
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA"
 
-# Specify the image to be produced
+  # Step 5: Push the latest tag
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest"
+
+# Specify the images to be produced
 images:
   - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$COMMIT_SHA"
+  - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest"
 
 # Substitutions to make the build configuration reusable
 substitutions:
@@ -36,6 +59,12 @@ substitutions:
   _REPOSITORY: "vitrine-prod-repo"
   _IMAGE_NAME: "vitrine-api-prod"
 
-# Add the logging option to fix the error
+# Build options
 options:
   logging: CLOUD_LOGGING_ONLY
+  machineType: "E2_HIGHCPU_8"
+  diskSizeGb: 100
+  substitutionOption: "ALLOW_LOOSE"
+
+# Timeout for the entire build
+timeout: "1200s"
